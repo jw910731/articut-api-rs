@@ -76,8 +76,8 @@ pub enum Level {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct PosTag {
-    pos: String, // TODO: Make this a enum
-    text: String,
+    pub pos: String, // TODO: Make this a enum
+    pub text: String,
 }
 
 #[derive(Debug, Deserialize)]
