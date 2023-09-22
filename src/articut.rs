@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt;
-use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
 
@@ -65,26 +63,15 @@ impl FromStr for Error {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, Default)]
 pub enum Level {
     #[serde(rename = "lv1")]
     Lv1,
     #[serde(rename = "lv2")]
+    #[default]
     Lv2,
     #[serde(rename = "lv3")]
     Lv3,
-}
-
-impl FromStr for Level {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "lv1" => Ok(Level::Lv1),
-            "lv2" => Ok(Level::Lv2),
-            "lv3" => Ok(Level::Lv3),
-            _ => Err(()),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -95,12 +82,20 @@ pub struct PosTag {
 
 #[derive(Debug, Deserialize)]
 pub struct Response {
+    #[serde(default)]
     pub version: String,
+    #[serde(default)]
     pub level: Level,
+    msg: String,
+    #[serde(default)]
     pub exec_time: f32,
+    #[serde(default)]
     pub result_pos: Vec<String>,
+    #[serde(default)]
     pub result_obj: Vec<Vec<PosTag>>,
+    #[serde(default)]
     pub result_segmentation: String,
+    #[serde(default)]
     pub word_count_balance: i32,
 }
 
@@ -150,7 +145,7 @@ impl<'a, 'b> Articut<'a, 'b> {
         }
     }
 
-    pub async fn parse(mut self, text: &str) -> Result<Response, Error> {
+    pub async fn parse(self, text: &str) -> Result<Response, Error> {
         self.parse_full_options(text, DEFAULT_OPTION.clone()).await
     }
 
@@ -182,6 +177,7 @@ impl<'a, 'b> Articut<'a, 'b> {
             .await?
             .json::<Response>()
             .await
-            .map_err(|e| e.into())
+            .map_err(Into::into)
+            .and_then(|res| Error::from_str(&res.msg).map_or(Ok(res), |e| Err(e.into())))
     }
 }
